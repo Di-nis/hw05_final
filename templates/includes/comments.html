@@ -1,0 +1,36 @@
+{% load user_filters %}
+
+{% if user.is_authenticated %} 
+<div class="card my-4">
+<form
+    action="{% url 'add_comment' username=post_profile.author.username post_id=post_profile.id %}"
+    method="post">
+    {% csrf_token %}
+    <h5 class="card-header">Добавить комментарий:</h5>
+    <div class="card-body">
+    <form>
+        <div class="form-group">
+            <textarea class="form-control">{{ form.text }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить</button>
+    </form>
+    </div>
+</form>
+</div>
+{% endif %}
+
+{% for item in items %}
+<div class="media mb-4">
+<div class="media-body">
+    <h5 class="mt-0">
+    <a
+        href="{% url 'profile' username=item.author.username %}"
+        name="comment_{{ item.id }}"
+        >Автор: {{ item.author.get_full_name }}</a>
+        <h6>{{ item.created|date:"j F Y h:i" }} </h6>
+    </h5>
+    {{ item.text|linebreaksbr }}
+</div>
+</div>
+
+{% endfor %}

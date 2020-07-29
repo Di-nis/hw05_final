@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %} Подписки. Последние обновления {% endblock %}
+
+{% block content %}
+    <div class="container">
+
+    {% include "includes/menu.html" with index=True %}
+    
+        <h2> Последние обновления на сайте<h2>
+
+        {% for post_profile in page %}
+            {% include "includes/card_post.html" %}
+        {% endfor %}
+    </div>
+
+        {% if page.has_other_pages %}
+            {% include "includes/paginator.html" with items=page paginator=paginator %}
+        {% endif %}
+</div>
+{% endblock %}

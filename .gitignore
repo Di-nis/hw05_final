@@ -17,6 +17,7 @@ __pycache__/
 
 static/
 posts/static/
+sent_emails/
 media/
 
 db.sqlite3

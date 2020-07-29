@@ -1,0 +1,33 @@
+<div class="card mb-3 mt-1 shadow-sm">
+    {% load thumbnail %}
+    {% thumbnail post_profile.image "960x339" crop="center" upscale=True as im %}
+            <img class="card-img" id='unique_id' src="{{ im.url }}">
+    {% endthumbnail %}
+    <div class="card-body">
+            <p class="card-text">
+                    <a href="{% url 'profile' username=post_profile.author.username %}"><strong class="d-block text-gray-dark">{{ post_profile.author.get_full_name }}</strong></a>
+                    {{ post_profile.text|linebreaksbr }}
+            </p>
+
+            {% if post_profile.group %}
+            <a class="card-link muted" href="{% url 'group_posts' post_profile.group.slug %}">
+                    <strong class="d-block text-gray-dark">{{ post_profile.group.description }}</strong>
+            </a>
+            {% endif %}
+
+
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="btn-group ">
+                        {% if user.is_authenticated %}
+                        {% if post_profile.comments.exists %}
+                    <a class="btn btn-sm text-muted" href="{% url 'add_comment' username=post_profile.author.username post_id=post_profile.id %}" role="button">{{ post_profile.comments.count }} комментариев</a>
+                        {% else %}
+                        <a class="btn btn-sm text-muted" href="{% url 'add_comment' username=post_profile.author.username post_id=post_profile.id %}" role="button">Добавить комментарий</a>
+                        {% endif %}
+                        {% endif %}
+                </div>
+                <small class="btn btn-sm text-muted">{{ post_profile.pub_date|date:"d M Y" }}</small>
+             </div>
+    </div>
+</div>
