@@ -26,6 +26,10 @@
                         <a class="btn btn-sm text-muted" href="{% url 'add_comment' username=post_profile.author.username post_id=post_profile.id %}" role="button">Добавить комментарий</a>
                         {% endif %}
                         {% endif %}
+
+                        {% if user_profile == request.user %}
+                        <a class="btn btn-sm text-muted" href="{% url 'post_edit' username=post_profile.author.username post_id=post_profile.id %}" role="button">Редактировать</a>
+                        {% endif %}
                 </div>
                 <small class="btn btn-sm text-muted">{{ post_profile.pub_date|date:"d M Y" }}</small>
              </div>
