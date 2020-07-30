@@ -1,8 +1,12 @@
+import io
+import tempfile
 from urllib.parse import urljoin
 
 from django.core.cache import cache
-from django.test import Client, TestCase
+from django.core.files.base import ContentFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from .models import Comment, Follow, Group, Post, User
 
@@ -10,11 +14,11 @@ from .models import Comment, Follow, Group, Post, User
 class Hw05_Final_Test(TestCase):
 
     def setUp(self):
-
         self.user = User.objects.create_user(
             username="MegaDen",
             email="di-nis@ya.ru",
         )
+
         self.auth_client = Client()
         self.auth_client.force_login(self.user)
         self.nonauth_client = Client()
@@ -49,7 +53,7 @@ class Hw05_Final_Test(TestCase):
         response_profile = self.auth_client.get(self.urls['profile'])
         self.assertEqual(response_profile.status_code, 200)
 
-    def test_create_new_post_auth_user(self):
+    def test_auth_user_can_publish_new_post(self):
         response_new_post = self.auth_client.post(
             reverse('new_post'),
             data={"text": "Новый текст",
@@ -65,7 +69,7 @@ class Hw05_Final_Test(TestCase):
         self.assertEqual(new_post.text, "Новый текст")
         self.assertEqual(post_counter, 1)
 
-    def test_create_new_post_nonauth_user(self):
+    def test_nonauth_user_cant_publish_new_post(self):
         response_new_post = self.nonauth_client.post(
             reverse('new_post'),
             data={"text": "Новый текст",
@@ -77,8 +81,7 @@ class Hw05_Final_Test(TestCase):
         self.assertRedirects(response_new_post, url_redirect)
         self.assertEqual(post_counter, 0)
 
-    def test_new_post_on_pages(self):
-        cache.clear()
+    def test_new_post_appears_on_pages(self):
         new_post = Post.objects.create(text="Текст нового поста",
                                        author=self.user,
                                        group=self.group)
@@ -87,7 +90,7 @@ class Hw05_Final_Test(TestCase):
             self.requests_and_checks(url, new_post.group,
                                      new_post.author, new_post.text)
 
-    def test_edit_post_auth_user(self):
+    def test_auth_user_can_edit_post_and_post_edited_on_pages(self):
         new_group = Group.objects.create(title='Musictv',
                                          slug='musictv',
                                          description='Музыкальный канал')
@@ -119,19 +122,23 @@ class Hw05_Final_Test(TestCase):
         response = self.nonauth_client.get('/group/tennis/')
         self.assertEqual(response.status_code, 404)
 
-    def test_tag_image_and_image_on_pages(self):
-        with open('media/lake.jpg', 'rb') as img:
-            response_new_post = self.auth_client.post(
-                reverse('new_post'),
-                data={"text": "Новый текст",
-                      "author": self.user,
-                      "group": self.group.id,
-                      "image": img},
-                follow=True)
+    def test_find_image_tag_and_post_on_pages(self):
+        with tempfile.TemporaryDirectory() as temp_directory:
+            with override_settings(MEDIA_ROOT=temp_directory):
+                byte_image = io.BytesIO()
+                im = Image.new("RGB", size=(1000, 1000), color=(255, 0, 0, 0))
+                im.save(byte_image, format='jpeg')
+                byte_image.seek(0)
+                image = ContentFile(byte_image.read(), name='test.jpeg')
 
+        response_new_post = self.auth_client.post(
+            reverse('new_post'),
+            data={"text": "Новый текст",
+                  "author": self.user,
+                  "group": self.group.id,
+                  "image": image},
+            follow=True)
         post_counter = Post.objects.count()
-
-        self.assertEqual(response_new_post.status_code, 200)
 
         for url in self.urls:
             response = self.auth_client.get(self.urls[url])
@@ -140,16 +147,22 @@ class Hw05_Final_Test(TestCase):
         self.assertContains(response, '<img')
         self.assertEqual(post_counter, 1)
 
-    def test_post_without_image(self):
-        with open('media/test.txt', 'rb') as img:
-            response_post = self.auth_client.post(
-                reverse('new_post'),
-                data={"text": "Новый текст",
-                      "author": self.user,
-                      "group": self.group.id,
-                      "image": img},
-                follow=True)
+    def test_block_create_post_with_not_image(self):
+        with tempfile.TemporaryDirectory() as temp_directory:
+            with override_settings(MEDIA_ROOT=temp_directory):
+                byte_image = io.BytesIO()
+                im = Image.new("RGB", size=(1000, 1000), color=(255, 0, 0, 0))
+                im.save(byte_image, format='jpeg')
+                byte_image.seek(0)
+                image = ContentFile(byte_image.read(), name='test.txt')
 
+        response_post = self.auth_client.post(
+            reverse('new_post'),
+            data={"text": "Новый текст",
+                  "author": self.user,
+                  "group": self.group.id,
+                  "image": image},
+            follow=True)
         post_counter = Post.objects.count()
 
         self.assertEqual(response_post.status_code, 200)
@@ -158,66 +171,79 @@ class Hw05_Final_Test(TestCase):
     def test_cache(self):
         post_one = self.auth_client.post(
                 reverse('new_post'),
-                data={"text": "Пост первого поста",
+                data={"text": "Текст первого поста",
                       "author": self.user,
                       "group": self.group.id},
                 follow=True)
         response_first_post = self.auth_client.get(reverse('index'))
 
-        self.assertContains(response_first_post, "Пост первого поста")
+        self.assertNotContains(response_first_post, "Текст первого поста")
         self.assertEqual(post_one.status_code, 200)
+
+        cache.clear()
 
         post_two = self.auth_client.post(
                 reverse('new_post'),
-                data={"text": "Пост второго поста",
+                data={"text": "Текст второго поста",
                       "author": self.user,
                       "group": self.group.id},
                 follow=True)
 
-        response_second_post = self.auth_client.get(reverse('index'))
+        response_second_post = self.auth_client.get(self.urls['index'])
 
         self.assertEqual(post_two.status_code, 200)
-        self.assertNotContains(response_second_post, "Пост второго поста")
+        self.assertContains(response_second_post, "Текст второго поста")
 
-    def test_follow_and_unfollow_auth_user(self):
-        user_1 = User.objects.create_user(
+    def test_auth_user_can_follow(self):
+        user_follower = User.objects.create_user(
             username="Fedun",
             email="fedun@ya.ru"
         )
         response_follow = self.auth_client.post(
             reverse('profile_follow', kwargs={
-                    'username': user_1}),
-            data={"user": self.user,
-                  "author": user_1},
-            follow=True)
-        follow_counter_fol = Follow.objects.count()
-
-        self.assertEqual(response_follow.status_code, 200)
-        self.assertTrue(response_follow.context['following'])
-        self.assertEqual(follow_counter_fol, 1)
-
-        response_unfollow = self.auth_client.post(
-            reverse('profile_unfollow', kwargs={
-                    'username': user_1}),
-            data={"user": self.user,
-                  "author": user_1},
-            follow=True)
-
-        follow_counter_unfol = Follow.objects.count()
-        self.assertEqual(response_unfollow.status_code, 200)
-        self.assertFalse(response_unfollow.context['following'])
-        self.assertEqual(follow_counter_unfol, 0)
-
-    def test_new_post_follow_and_unfollow(self):
-        user_follower = User.objects.create_user(username="Fedun",
-                                                 email="fedun@ya.ru")
-
-        response_follow = self.auth_client.post(
-            reverse('profile_follow', kwargs={
-                    'username': user_follower.username}),
+                    'username': user_follower}),
             data={"user": self.user,
                   "author": user_follower},
             follow=True)
+        follow_counter = Follow.objects.count()
+
+        self.assertEqual(response_follow.status_code, 200)
+        self.assertTrue(response_follow.context['following'])
+        self.assertEqual(follow_counter, 1)
+
+    def test_auth_user_can_unfollow(self):
+        user_follower = User.objects.create_user(
+            username="Fedun",
+            email="fedun@ya.ru"
+        )
+
+        subscription = Follow.objects.create(
+            user=self.user,
+            author=user_follower
+        )
+
+        response_unfollow = self.auth_client.post(
+            reverse('profile_unfollow', kwargs={
+                    'username': user_follower}),
+            data={"user": self.user,
+                  "author": user_follower},
+            follow=True)
+
+        follow_counter = Follow.objects.count()
+        self.assertEqual(response_unfollow.status_code, 200)
+        self.assertFalse(response_unfollow.context['following'])
+        self.assertEqual(follow_counter, 0)
+
+    def test_new_post_appears_on_user_follower_pages(self):
+        user_follower = User.objects.create_user(
+            username="Fedun",
+            email="fedun@ya.ru"
+        )
+
+        subscription = Follow.objects.create(
+            user=self.user,
+            author=user_follower
+        )
 
         new_post = Post.objects.create(text="Текст нового поста",
                                        author=user_follower,
@@ -228,49 +254,59 @@ class Hw05_Final_Test(TestCase):
 
         self.assertEqual(post_fol.text, "Текст нового поста")
 
-        response_unfollow = self.auth_client.post(
-            reverse('profile_unfollow', kwargs={
-                    'username': user_follower.username}),
-            data={"user": self.user,
-                  "author": user_follower},
-            follow=True)
-
-        post_unfol = response_post.context['paginator'].object_list.first()
-
-        self.assertEqual(post_unfol, None)
-
-    def test_create_comment_auth_and_nonauth_user(self):
-        user_1 = User.objects.create_user(username="Fedun",
-                                          email="fedun@ya.ru")
+    def test_new_post_not_appears_on_user_nonfollower_pages(self):
+        user_nonfollower = User.objects.create_user(
+            username="Fedun",
+            email="fedun@ya.ru"
+        )
 
         new_post = Post.objects.create(text="Текст нового поста",
-                                       author=user_1,
+                                       author=user_nonfollower,
+                                       group=self.group)
+
+        response_post = self.auth_client.post(reverse('follow_index'))
+        post_unfol = response_post.context['paginator'].object_list.first()
+
+        post_counter = Post.objects.count()
+
+        self.assertEqual(post_unfol, None)
+        self.assertEqual(post_counter, 1)
+
+    def test_auth_user_can_comments(self):
+        new_post = Post.objects.create(text="Текст нового поста",
+                                       author=self.user,
                                        group=self.group)
 
         response_comment_auth = self.auth_client.post(
             reverse('add_comment', kwargs={
-                    'username': user_1.username,
+                    'username': self.user.username,
                     'post_id': new_post.id}),
             data={"post": new_post.id,
                   "author": self.user,
                   "text": "Новый коммент авторизованного пользователя"},
             follow=True)
-        comment_counter_auth = Comment.objects.count()
+
+        comment_counter = Comment.objects.count()
         self.assertEqual(response_comment_auth.status_code, 200)
-        self.assertEqual(comment_counter_auth, 1)
+        self.assertEqual(comment_counter, 1)
+
+    def test_nonauth_user_cant_comments(self):
+        new_post = Post.objects.create(text="Текст нового поста",
+                                       author=self.user,
+                                       group=self.group)
 
         response_comment_nonauth = self.nonauth_client.post(
             reverse('add_comment', kwargs={
-                    'username': user_1.username,
+                    'username': self.user.username,
                     'post_id': new_post.id}),
             data={"post": new_post.id,
                   "author": self.user,
-                  "text": "Новый коммент неавторизаванного пользователя"},
+                  "text": "Новый коммент авторизованного пользователя"},
             follow=True)
 
-        comment_counter_nonauth = Comment.objects.count()
+        comment_counter = Comment.objects.count()
 
-        self.assertEqual(comment_counter_nonauth, 1)
+        self.assertEqual(comment_counter, 0)
 
     def tearDown(self):
         print("Тест выполнен")

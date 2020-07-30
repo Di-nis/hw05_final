@@ -23,13 +23,14 @@ class Post(models.Model):
     pub_date = models.DateTimeField("date published", auto_now_add=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name="posts")
-    group = models.ForeignKey(Group, on_delete=models.CASCADE,
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL,
                               related_name="group_posts",
                               blank=True, null=True,
                               help_text="Выберите сообщество",
-                              verbose_name="Наименование сообщества"
-                              )
-    image = models.ImageField(upload_to='posts/', blank=True, null=True)
+                              verbose_name="Наименование сообщества")
+    image = models.ImageField(upload_to='posts/', blank=True, null=True,
+                              help_text="Загрузите изображение",
+                              verbose_name="Изображение")
 
     def __str__(self):
         return textwrap.shorten(self.text, width=300)
@@ -53,3 +54,6 @@ class Follow(models.Model):
                              related_name="follower")
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name="following")
+
+    class Meta:
+        unique_together = ['user', 'author']

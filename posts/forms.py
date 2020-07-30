@@ -2,8 +2,6 @@ from django.forms import ModelForm
 
 from .models import Comment, Post
 
-# from django import forms
-
 
 class PostForm(ModelForm):
     class Meta:

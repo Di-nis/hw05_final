@@ -6,14 +6,14 @@
     action="{% url 'add_comment' username=post_profile.author.username post_id=post_profile.id %}"
     method="post">
     {% csrf_token %}
-    <h5 class="card-header">Добавить комментарий:</h5>
+    <h6 class="card-header">Добавить комментарий:</h6>
     <div class="card-body">
-    <form>
         <div class="form-group">
-            <textarea class="form-control">{{ form.text }}</textarea>
+            <textarea class="form-control"></textarea>
+            <small id="{{ field.id_for_label }}-help"
+            class="form-text text-muted">{{ form.text.help_text|safe }}</small>
         </div>
         <button type="submit" class="btn btn-primary">Отправить</button>
-    </form>
     </div>
 </form>
 </div>
