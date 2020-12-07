@@ -2,7 +2,7 @@ astroid==2.4.2
 atomicwrites==1.4.0
 attrs==19.3.0
 colorama==0.4.3
-Django==2.2.9
+Django==2.2.13
 djangorestframework==3.11.1
 iniconfig==1.0.0
 isort==5.2.2
