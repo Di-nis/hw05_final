@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>{% block title %}Социальная сеть вся Руси{% endblock %} | Yatube</title>
+    <title>{% block title %}Социальная сеть о спорте{% endblock %} | Yatube</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}">
     <script src="{% static 'jquery/dist/jquery.min.js' %}"></script>
@@ -15,7 +15,7 @@
     {% include 'includes/nav.html' %}
     <main>
         <div class="container">
-            <h1>{% block header %}Социальная сеть всея Руси{% endblock %}</h1>
+            <h2 align="center">{% block header %}Социальная сеть о спорте{% endblock %}</h2>
             {% block content %}
             {% endblock %}
         </div>

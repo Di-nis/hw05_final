@@ -7,7 +7,7 @@
     {% include "includes/menu.html" with index=True %}
     
     <div class="col-md-9">
-        <h2> Последние обновления на сайте<h2></h2>
+        <h4 align="center">Последние обновления на сайте</h4>
         {% for post_profile in page %}
             {% include "includes/card_post.html" with post_profile=post_profile %}
         {% endfor %}
@@ -15,5 +15,6 @@
         {% if page.has_other_pages %}
             {% include "includes/paginator.html" with items=page paginator=paginator %}
         {% endif %}
+    </div>
     </div>
 {% endblock %}

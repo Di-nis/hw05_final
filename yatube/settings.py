@@ -11,6 +11,7 @@ ALLOWED_HOSTS = [
         "127.0.0.1",
         "[::1]",
         "testserver",
+        "*",
 ]
 
 INSTALLED_APPS = [
@@ -35,6 +36,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+INTERNAL_IPS = [
+    "127.0.0.1",
 ]
 
 ROOT_URLCONF = 'yatube.urls'
@@ -86,7 +91,7 @@ CACHES = {
     }
 }
 
-LANGUAGE_CODE = 'en-en'
+LANGUAGE_CODE = 'ru'
 
 TIME_ZONE = 'UTC'
 

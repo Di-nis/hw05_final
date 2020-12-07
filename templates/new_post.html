@@ -26,7 +26,7 @@
                 {% endif %}
                 
                 {% csrf_token %}
-
+                <form>
                 {% for field in form %}
                     <div class="form-group row"
                         aria-required={% if field.field.required %}"true"{% else %}"false"{% endif %}>
